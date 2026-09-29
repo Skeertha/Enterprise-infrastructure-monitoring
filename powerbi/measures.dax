@@ -1,0 +1,33 @@
+Total Checks = COUNTROWS(health_checks)
+
+Healthy Checks =
+CALCULATE([Total Checks], health_checks[status] = "HEALTHY")
+
+Health Percentage =
+DIVIDE([Healthy Checks], [Total Checks], 0) * 100
+
+Total Incidents = COUNTROWS(incidents)
+
+Active Incidents =
+CALCULATE(
+    [Total Incidents],
+    incidents[status] IN {"OPEN", "ACKNOWLEDGED", "ESCALATED"}
+)
+
+Critical Incidents =
+CALCULATE([Total Incidents], incidents[severity] = "CRITICAL")
+
+SLA Met Incidents =
+CALCULATE([Total Incidents], incidents[sla_met] = 1)
+
+SLA Compliance Percentage =
+DIVIDE([SLA Met Incidents], [Total Incidents], 0) * 100
+
+MTTR Minutes =
+AVERAGE(incidents[resolution_minutes])
+
+SLA Breaches =
+CALCULATE([Total Incidents], incidents[escalation_level] > 0)
+
+Latest Check Time = MAX(health_checks[observed_at])
+

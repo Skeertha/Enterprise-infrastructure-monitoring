@@ -1,0 +1,16 @@
+{
+  "name": "Infrastructure Operations",
+  "dataColors": ["#16A34A", "#F59E0B", "#DC2626", "#2563EB", "#7C3AED", "#64748B"],
+  "background": "#F8FAFC",
+  "foreground": "#0F172A",
+  "tableAccent": "#2563EB",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "title": [{"fontFamily": "Segoe UI", "fontSize": 12, "color": {"solid": {"color": "#0F172A"}}}],
+        "background": [{"color": {"solid": {"color": "#FFFFFF"}}, "transparency": 0}]
+      }
+    }
+  }
+}
+

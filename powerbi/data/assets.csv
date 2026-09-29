@@ -1,0 +1,8 @@
+asset_id,hostname,asset_type,operating_system,environment,owner,ip_address,location,criticality,status,created_at,updated_at
+CLOUD-AZ-01,azure-production,Cloud,Azure,Lab,Infrastructure Operations,,Lab,High,Active,2026-09-29 06:42:58,2026-09-29 06:42:58
+DB-SQL-01,sql-orders-01,Database,SQL Server,Lab,Infrastructure Operations,,Lab,Critical,Active,2026-09-29 06:42:58,2026-09-29 06:42:58
+JOB-JDE-01,jde-daily-batch,Scheduled Job,JDE,Lab,Infrastructure Operations,,Lab,High,Active,2026-09-29 06:42:58,2026-09-29 06:42:58
+NET-FW-01,edge-fw-01,Network Device,Firewall OS,Lab,Infrastructure Operations,,Lab,Critical,Active,2026-09-29 06:42:58,2026-09-29 06:42:58
+SRV-LNX-01,lnx-api-01,Server,Ubuntu 24.04,Lab,Infrastructure Operations,,Lab,High,Active,2026-09-29 06:42:58,2026-09-29 06:42:58
+SRV-WIN-01,win-app-01,Server,Windows Server 2022,Lab,Infrastructure Operations,,Lab,High,Active,2026-09-29 06:42:58,2026-09-29 06:42:58
+VMW-VC-01,vcenter-lab-01,Virtualization,VMware,Lab,Infrastructure Operations,,Lab,High,Active,2026-09-29 06:42:58,2026-09-29 06:42:58

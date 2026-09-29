@@ -1,0 +1,123 @@
+database_path: data/monitoring.db
+export_directory: powerbi/data
+auto_resolve: true
+
+sla_minutes:
+  CRITICAL: 15
+  HIGH: 30
+  MEDIUM: 120
+  LOW: 480
+
+thresholds:
+  cpu_percent:
+    warning: 80
+    critical: 90
+    direction: high
+  memory_percent:
+    warning: 80
+    critical: 90
+    direction: high
+  disk_percent:
+    warning: 80
+    critical: 90
+    direction: high
+
+assets:
+  - asset_id: LOCAL-SRV-01
+    hostname: local-lab-server
+    asset_type: Server
+    operating_system: Cross-platform
+    environment: Lab
+    owner: Infrastructure Operations
+    location: Home Lab
+    criticality: High
+  - asset_id: DB-LAB-01
+    hostname: lab-application-db
+    asset_type: Database
+    operating_system: SQLite
+    environment: Lab
+    owner: Database Operations
+    location: Home Lab
+    criticality: Medium
+  - asset_id: NET-WEB-01
+    hostname: example-service
+    asset_type: Network Endpoint
+    operating_system: HTTPS
+    environment: Lab
+    owner: Network Operations
+    criticality: Medium
+  - asset_id: JOB-JDE-LOCAL
+    hostname: jde-daily-job
+    asset_type: Scheduled Job
+    operating_system: JDE Simulation
+    environment: Lab
+    owner: Application Operations
+    criticality: High
+  - asset_id: CLOUD-AWS-01
+    hostname: aws-account
+    asset_type: Cloud
+    operating_system: AWS
+    environment: Lab
+    owner: Cloud Operations
+    criticality: High
+  - asset_id: CLOUD-AZ-01
+    hostname: azure-subscription
+    asset_type: Cloud
+    operating_system: Azure
+    environment: Lab
+    owner: Cloud Operations
+    criticality: High
+  - asset_id: VMW-VC-LOCAL
+    hostname: ${VCENTER_HOST:-vcenter.example.local}
+    asset_type: Virtualization
+    operating_system: VMware vCenter
+    environment: Lab
+    owner: Infrastructure Operations
+    criticality: High
+
+collectors:
+  system:
+    enabled: true
+    asset_id: LOCAL-SRV-01
+    # Set to C:\ on Windows if required. Omit to use the current system root.
+
+  sqlite:
+    - enabled: true
+      asset_id: DB-LAB-01
+      database_path: data/lab_application.db
+      timeout_seconds: 3
+
+  tcp:
+    - enabled: false
+      asset_id: NET-WEB-01
+      host: example.com
+      port: 443
+      timeout_seconds: 2
+      warning_ms: 250
+      critical_ms: 1000
+
+  scheduled_jobs:
+    - enabled: false
+      asset_id: JOB-JDE-LOCAL
+      job_name: JDE Daily Job
+      heartbeat_file: data/job_heartbeats/jde_daily.ok
+      warning_age_minutes: 60
+      critical_age_minutes: 90
+
+  cloud:
+    - enabled: false
+      provider: aws
+      asset_id: CLOUD-AWS-01
+    - enabled: false
+      provider: azure
+      asset_id: CLOUD-AZ-01
+
+  vmware:
+    enabled: false
+    asset_id: VMW-VC-LOCAL
+    host: ${VCENTER_HOST:-vcenter.example.local}
+    username: ${VCENTER_USERNAME:-replace-me}
+    password: ${VCENTER_PASSWORD:-replace-me}
+    port: 443
+    verify_ssl: true
+
