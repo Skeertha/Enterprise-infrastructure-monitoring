@@ -1,0 +1,8 @@
+services:
+  monitor:
+    build: .
+    volumes:
+      - ./data:/app/data
+      - ./powerbi/data:/app/powerbi/data
+    command: ["python", "-m", "infra_monitor", "--config", "config/config.example.yaml", "demo", "--reset"]
+
