@@ -37,3 +37,18 @@ def test_scheduled_job_collector_detects_missing_heartbeat(tmp_path):
     ).collect()[0]
     assert result.status == CheckStatus.CRITICAL
     assert result.value == "missing"
+
+def test_as_utc_iso_returns_none_for_none():
+    from infra_monitor.models import as_utc_iso
+
+    assert as_utc_iso(None) is None
+
+
+def test_as_utc_iso_assigns_utc_to_naive_datetime():
+    from infra_monitor.models import as_utc_iso
+
+    naive_time = datetime(2026, 10, 31, 9, 30)
+
+    result = as_utc_iso(naive_time)
+
+    assert result == "2026-10-31T09:30:00+00:00"

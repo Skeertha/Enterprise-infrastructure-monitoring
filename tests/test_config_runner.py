@@ -130,3 +130,37 @@ def test_monitoring_runner_persists_collector_results(tmp_path):
     results = runner.run_once(datetime(2026, 9, 29, tzinfo=timezone.utc))
     assert len(results) == 1
     assert len(store.query("SELECT * FROM health_checks")) == 1
+
+def test_build_collectors_includes_ip_dns_and_network_interface():
+    config = {
+        "collectors": {
+            "ip": [
+                {
+                    "enabled": True,
+                    "asset_id": "NET-IP-01",
+                    "target": "8.8.8.8",
+                }
+            ],
+            "dns": [
+                {
+                    "enabled": True,
+                    "asset_id": "DNS-01",
+                    "hostname": "example.com",
+                }
+            ],
+            "network_interface": {
+                "enabled": True,
+                "asset_id": "NET-IF-01",
+                "interfaces": ["Wi-Fi"],
+            },
+        }
+    }
+
+    collectors = build_collectors(config)
+    collector_types = {type(collector).__name__ for collector in collectors}
+
+    assert collector_types == {
+        "IPCollector",
+        "DNSCollector",
+        "NetworkInterfaceCollector",
+    }

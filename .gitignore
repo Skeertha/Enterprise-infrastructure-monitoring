@@ -18,3 +18,8 @@ build/
 Thumbs.db
 .DS_Store
 
+
+# Local and temporary files
+.pytest-temp/
+config.local.yaml
+config/config.local.yaml

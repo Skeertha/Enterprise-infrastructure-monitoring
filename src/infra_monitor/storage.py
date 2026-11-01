@@ -2,10 +2,20 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Iterable
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from infra_monitor.models import Asset, HealthResult, Incident, as_utc_iso
+
+@contextmanager
+def managed_connection(connection: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
+
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -92,11 +102,11 @@ class SQLiteStore:
         return connection
 
     def initialize(self) -> None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.executescript(SCHEMA)
 
     def upsert_asset(self, asset: Asset) -> None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.execute(
                 """
                 INSERT INTO assets (
@@ -135,7 +145,7 @@ class SQLiteStore:
 
     def record_health_result(self, result: HealthResult) -> None:
         record = result.to_record()
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.execute(
                 """
                 INSERT INTO health_checks (
@@ -150,7 +160,7 @@ class SQLiteStore:
             )
 
     def find_active_incident(self, fingerprint: str) -> sqlite3.Row | None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             return connection.execute(
                 """
                 SELECT * FROM incidents
@@ -161,7 +171,7 @@ class SQLiteStore:
             ).fetchone()
 
     def create_incident(self, incident: Incident) -> None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.execute(
                 """
                 INSERT INTO incidents (
@@ -197,7 +207,7 @@ class SQLiteStore:
         severity: str,
         updated_at: str,
     ) -> None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.execute(
                 """
                 UPDATE incidents
@@ -213,7 +223,7 @@ class SQLiteStore:
         resolved_at: str,
         resolution: str,
     ) -> None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.execute(
                 """
                 UPDATE incidents
@@ -224,7 +234,7 @@ class SQLiteStore:
             )
 
     def acknowledge_incident(self, incident_id: str, acknowledged_at: str) -> bool:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             cursor = connection.execute(
                 """
                 UPDATE incidents
@@ -238,7 +248,7 @@ class SQLiteStore:
     def manually_resolve_incident(
         self, incident_id: str, resolved_at: str, resolution: str
     ) -> bool:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             cursor = connection.execute(
                 """
                 UPDATE incidents
@@ -250,7 +260,7 @@ class SQLiteStore:
             return cursor.rowcount > 0
 
     def list_due_incidents(self, now_iso: str) -> list[sqlite3.Row]:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             return list(
                 connection.execute(
                     """
@@ -269,7 +279,7 @@ class SQLiteStore:
         next_due_at: str,
         updated_at: str,
     ) -> None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.execute(
                 """
                 UPDATE incidents
@@ -286,7 +296,7 @@ class SQLiteStore:
         details: str,
         created_at: str,
     ) -> None:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             connection.execute(
                 """
                 INSERT INTO incident_events (incident_id, event_type, details, created_at)
@@ -296,5 +306,5 @@ class SQLiteStore:
             )
 
     def query(self, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
-        with self.connect() as connection:
+        with managed_connection(self.connect()) as connection:
             return [dict(row) for row in connection.execute(sql, parameters).fetchall()]

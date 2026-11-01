@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,7 +8,12 @@ from typing import Any, Protocol
 from infra_monitor.checks.cloud import CloudCLICollector
 from infra_monitor.checks.database import SQLiteDatabaseCollector
 from infra_monitor.checks.jobs import ScheduledJobCollector
-from infra_monitor.checks.network import TCPCollector
+from infra_monitor.checks.network import (
+    DNSCollector,
+    IPCollector,
+    NetworkInterfaceCollector,
+    TCPCollector,
+)
 from infra_monitor.checks.system import SystemCollector
 from infra_monitor.checks.vmware import VMwareCollector
 from infra_monitor.incidents import IncidentManager
@@ -64,6 +70,34 @@ def build_collectors(config: dict[str, Any]) -> list[Collector]:
                 )
             )
 
+    for item in settings.get("ip", []):
+        if item.get("enabled", True):
+            collectors.append(
+                IPCollector(
+                    asset_id=str(item["asset_id"]),
+                    target=str(item["target"]),
+                    timeout_seconds=float(item.get("timeout_seconds", 2)),
+                )
+            )
+
+    for item in settings.get("dns", []):
+        if item.get("enabled", True):
+            collectors.append(
+                DNSCollector(
+                    asset_id=str(item["asset_id"]),
+                    hostname=str(item["hostname"]),
+                )
+            )
+
+    interface = settings.get("network_interface", {})
+    if interface.get("enabled", False):
+        collectors.append(
+            NetworkInterfaceCollector(
+                asset_id=str(interface["asset_id"]),
+                interface_names=interface.get("interfaces"),
+            )
+        )
+
     for item in settings.get("sqlite", []):
         if item.get("enabled", True):
             collectors.append(
@@ -108,6 +142,7 @@ def build_collectors(config: dict[str, Any]) -> list[Collector]:
                 verify_ssl=bool(vmware.get("verify_ssl", True)),
             )
         )
+
     return collectors
 
 
@@ -124,10 +159,12 @@ class MonitoringRunner:
 
     def run_once(self, observed_at: datetime | None = None) -> list[HealthResult]:
         results: list[HealthResult] = []
+
         for collector in self.collectors:
             for result in collector.collect(observed_at):
                 self.store.record_health_result(result)
                 self.incident_manager.process(result)
                 results.append(result)
+
         self.incident_manager.escalate_due(observed_at)
         return results

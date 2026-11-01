@@ -81,3 +81,43 @@ def test_manual_acknowledge_and_resolution(tmp_path):
     incident = store.query("SELECT * FROM incidents")[0]
     assert incident["status"] == "RESOLVED"
     assert incident["resolution"] == "Service restarted and validation passed"
+
+
+def test_incident_escalates_twice_and_extends_sla_deadline(tmp_path):
+    store = create_store(tmp_path)
+    manager = IncidentManager(store, {"CRITICAL": 15})
+    start = datetime(2026, 9, 29, 8, 0, tzinfo=timezone.utc)
+
+    incident_id = manager.process(
+        result_at(start, CheckStatus.CRITICAL, Severity.CRITICAL)
+    )
+    assert incident_id is not None
+
+    first_escalation_time = start + timedelta(minutes=16)
+    assert manager.escalate_due(first_escalation_time) == [incident_id]
+
+    after_first = store.query("SELECT * FROM incidents")[0]
+    assert after_first["escalation_level"] == 1
+    assert after_first["status"] == "ESCALATED"
+    assert datetime.fromisoformat(after_first["due_at"]) == (
+        first_escalation_time + timedelta(minutes=15)
+    )
+
+    second_escalation_time = start + timedelta(minutes=32)
+    assert manager.escalate_due(second_escalation_time) == [incident_id]
+
+    after_second = store.query("SELECT * FROM incidents")[0]
+    assert after_second["escalation_level"] == 2
+    assert after_second["status"] == "ESCALATED"
+    assert datetime.fromisoformat(after_second["due_at"]) == (
+        second_escalation_time + timedelta(minutes=15)
+    )
+
+    events = store.query(
+        "SELECT event_type FROM incident_events ORDER BY id"
+    )
+    assert [event["event_type"] for event in events] == [
+        "CREATED",
+        "ESCALATED",
+        "ESCALATED",
+    ]
