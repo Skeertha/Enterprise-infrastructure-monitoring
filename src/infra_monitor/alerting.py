@@ -11,6 +11,16 @@ class Threshold:
     critical: float
     direction: str = "high"
 
+    def __post_init__(self) -> None:
+        if self.direction not in ("high", "low"):
+            raise ValueError("Threshold direction must be 'high' or 'low'")
+
+        if self.direction == "high" and self.critical < self.warning:
+            raise ValueError("Critical threshold must be greater than or equal to warning")
+
+        if self.direction == "low" and self.critical > self.warning:
+            raise ValueError("Critical threshold must be less than or equal to warning")
+
 
 def classify_numeric(value: float, threshold: Threshold) -> tuple[CheckStatus, Severity]:
     """Classify a value using high-is-bad or low-is-bad thresholds."""

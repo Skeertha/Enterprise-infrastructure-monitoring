@@ -29,3 +29,15 @@ def test_low_is_bad_thresholds():
 def test_invalid_threshold_direction():
     with pytest.raises(ValueError, match="direction"):
         classify_numeric(50, Threshold(80, 90, direction="sideways"))
+
+def test_high_direction_rejects_critical_below_warning():
+    with pytest.raises(ValueError, match="[Cc]ritical"):
+        Threshold(warning=90, critical=80)
+
+def test_low_direction_rejects_critical_above_warning():
+    with pytest.raises(ValueError, match="[Cc]ritical"):
+        Threshold(warning=10, critical=20, direction="low")
+
+def test_invalid_direction_rejected_on_creation():
+    with pytest.raises(ValueError, match="direction"):
+        Threshold(warning=80, critical=90, direction="sideways")
