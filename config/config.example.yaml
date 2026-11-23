@@ -96,6 +96,23 @@ collectors:
       warning_ms: 250
       critical_ms: 1000
 
+  ip:
+    - enabled: true
+      asset_id: NET-WEB-01
+      target: 8.8.8.8
+      timeout_seconds: 2
+
+  dns:
+    - enabled: true
+      asset_id: NET-WEB-01
+      hostname: google.com
+
+  network_interface:
+    enabled: true
+    asset_id: LOCAL-SRV-01
+    interfaces:
+      - Wi-Fi
+
   scheduled_jobs:
     - enabled: false
       asset_id: JOB-JDE-LOCAL
