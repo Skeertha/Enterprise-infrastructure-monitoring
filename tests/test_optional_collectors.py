@@ -614,3 +614,81 @@ def test_cloud_collector_reports_no_active_azure_alerts(monkeypatch):
     assert result.status == CheckStatus.HEALTHY
     assert result.value == 0
     assert "No active AZURE monitoring alerts" in result.message
+
+def test_tcp_collector_passes_connection_configuration(monkeypatch):
+    captured = {}
+
+    def fake_connection(address, timeout):
+        captured["address"] = address
+        captured["timeout"] = timeout
+        return nullcontext()
+
+    monkeypatch.setattr(
+        "infra_monitor.checks.network.socket.create_connection",
+        fake_connection,
+    )
+
+    TCPCollector(
+        "NET-001",
+        " example.com ",
+        8443,
+        timeout_seconds=5,
+    ).collect()
+
+    assert captured["address"] == ("example.com", 8443)
+    assert captured["timeout"] == 5
+
+def test_ip_collector_reports_ipv6_metadata(monkeypatch):
+    monkeypatch.setattr(
+        "infra_monitor.checks.network.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0),
+    )
+
+    result = IPCollector(
+        "NET-001",
+        "2001:db8::1",
+    ).collect()[0]
+
+    assert result.status == CheckStatus.HEALTHY
+    assert result.value == "reachable"
+    assert result.metadata["ip_address"] == "2001:db8::1"
+    assert result.metadata["ip_version"] == 6
+    assert result.metadata["protocol"] == "ICMP"
+
+def test_network_interface_collector_handles_missing_stats(monkeypatch):
+    monkeypatch.setattr(
+        "infra_monitor.checks.network.psutil.net_if_addrs",
+        lambda: {"Wi-Fi": []},
+    )
+    monkeypatch.setattr(
+        "infra_monitor.checks.network.psutil.net_if_stats",
+        lambda: {},
+    )
+
+    result = NetworkInterfaceCollector("NET-001").collect()[0]
+
+    assert result.value == "down"
+    assert result.status == CheckStatus.WARNING
+    assert result.metadata["is_up"] is False
+    assert result.metadata["speed_mbps"] is None
+
+def test_dns_collector_removes_duplicate_addresses(monkeypatch):
+    records = [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.0.2.10", 0)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.0.2.10", 0)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.0.2.20", 0)),
+    ]
+
+    monkeypatch.setattr(
+        "infra_monitor.checks.network.socket.getaddrinfo",
+        lambda *args, **kwargs: records,
+    )
+
+    result = DNSCollector("DNS-001", "example.com").collect()[0]
+
+    assert result.value == "resolved"
+    assert result.metadata["resolved_addresses"] == [
+        "192.0.2.10",
+        "192.0.2.20",
+    ]
+    assert result.metadata["record_count"] == 2
